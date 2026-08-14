@@ -8,7 +8,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 @Configuration
 @EnableWebSocket
-class WebSocketConfig(
+open class WebSocketConfig(
     private val esp32WebSocketHandler: Esp32WebSocketHandler
 ) : WebSocketConfigurer {
 

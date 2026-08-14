@@ -2,6 +2,7 @@ package com.example.pompieri.websocket
 
 import com.example.pompieri.model.TelemetryPayload
 import com.example.pompieri.service.TelemetryPipeline
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.TextMessage
@@ -14,7 +15,7 @@ class Esp32WebSocketHandler(
     private val sessionManager: DeviceSessionManager
 ) : TextWebSocketHandler() {
 
-    private val mapper = jacksonObjectMapper()
+    private val mapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
         // 1. Parse JSON to your TelemetryPayload model
