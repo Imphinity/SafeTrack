@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 
 @SpringBootApplication
-open class PompieriBackendApplication {  // <-- Change 'object' to 'open class'
+open class PompieriBackendApplication {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
