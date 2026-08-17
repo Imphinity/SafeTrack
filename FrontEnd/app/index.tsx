@@ -13,49 +13,19 @@ import { DetailDrawer } from '../components/DetailDrawer';
 import { Firefighter } from '../types/firefighter';
 import { Colors } from '../constants/colors';
 
-// Sample mock data demonstrating all status states (Normal, Warning, Critical)
-const MOCK_FIREFIGHTERS: Firefighter[] = [
-    {
-        id: '1',
-        name: 'John Doe',
-        status: 'NORMAL',
-        bpm: 80,
-        gasPpm: 800,
-        movementState: 'Moving..',
-    },
-    {
-        id: '2',
-        name: 'Jane Smith',
-        status: 'WARNING',
-        bpm: 115,
-        gasPpm: 1200,
-        movementState: 'Stationary',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        status: 'CRITICAL',
-        bpm: 155,
-        gasPpm: 2500,
-        movementState: 'Fall Detected',
-    },
-    {
-        id: '4',
-        name: 'Michael Brown',
-        status: 'NORMAL',
-        bpm: 76,
-        gasPpm: 450,
-        movementState: 'Moving..',
-    },
-];
+// Import the live WebSocket hook
+import { useFirefighterSocket } from '../hooks/useFirefighterSocket';
 
 export default function DashboardScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFirefighter, setSelectedFirefighter] = useState<Firefighter | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    // Real-time search filter
-    const filteredFirefighters = MOCK_FIREFIGHTERS.filter((firefighter) =>
+    // FETCH LIVE DATA FROM WEBSOCKET
+    const liveFirefighters = useFirefighterSocket();
+
+    // Real-time search filter using live data instead of mock data
+    const filteredFirefighters = liveFirefighters.filter((firefighter) =>
         firefighter.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
