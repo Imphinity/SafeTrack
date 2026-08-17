@@ -13,9 +13,15 @@ class DeviceSessionManager {
         sessions[deviceId] = session
     }
 
+    fun getSession(deviceId: String): WebSocketSession? {
+        return sessions[deviceId]
+    }
+
+    fun getAllSessions(): Map<String, WebSocketSession> {
+        return sessions
+    }
+
     fun removeSession(deviceId: String) {
         sessions.remove(deviceId)
     }
-
-    fun getSession(deviceId: String): WebSocketSession? = sessions[deviceId]
 }

@@ -15,6 +15,7 @@ class Esp32WebSocketHandler(
     private val sessionManager: DeviceSessionManager
 ) : TextWebSocketHandler() {
 
+    // Keep your custom mapper! It safely handles Kotlin data classes and Java Instants.
     private val mapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
@@ -29,7 +30,16 @@ class Esp32WebSocketHandler(
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: org.springframework.web.socket.CloseStatus) {
-        // TODO: iterate over sessionManager map to remove the closed session
-        // and optionally update device status to OFFLINE in your state cache
+        // Find which device just disconnected by matching the session ID
+        // and remove it from the manager to prevent memory leaks.
+        val deviceIdToRemove = sessionManager.getAllSessions()
+            .entries
+            .find { it.value.id == session.id }
+            ?.key
+
+        if (deviceIdToRemove != null) {
+            sessionManager.removeSession(deviceIdToRemove)
+            println("Device disconnected and session removed: $deviceIdToRemove")
+        }
     }
 }

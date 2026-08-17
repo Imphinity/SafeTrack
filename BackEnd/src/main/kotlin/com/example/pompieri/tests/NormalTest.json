@@ -1,0 +1,26 @@
+{
+  "deviceId": "firefighter-alpha-01",
+  "timestamp": "2026-08-14T12:15:30Z",
+  "batteryLevel": 92,
+  "health": {
+    "heartRate": 85,
+    "spO2": 98
+  },
+  "environment": {
+    "temp": 36.5,
+    "humidity": 45.0,
+    "gasPpm": 400.0
+  },
+  "motion": {
+    "ax": 0.1,
+    "ay": 0.0,
+    "az": 1.0,
+    "gx": 2.5,
+    "gy": 1.1,
+    "gz": 0.5
+  },
+  "location": {
+    "lat": 46.7712,
+    "lng": 23.6236
+  }
+}

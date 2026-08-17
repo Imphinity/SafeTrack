@@ -1,0 +1,26 @@
+{
+  "deviceId": "firefighter-bravo-02",
+  "timestamp": "2026-08-14T12:20:10Z",
+  "batteryLevel": 78,
+  "health": {
+    "heartRate": 145,
+    "spO2": 95
+  },
+  "environment": {
+    "temp": 38.0,
+    "humidity": 60.0,
+    "gasPpm": 300.0
+  },
+  "motion": {
+    "ax": 4.5,
+    "ay": 3.2,
+    "az": 1.5,
+    "gx": 120.0,
+    "gy": 85.0,
+    "gz": 40.0
+  },
+  "location": {
+    "lat": 46.7715,
+    "lng": 23.6240
+  }
+}
