@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Firefighter } from '../types/firefighter';
 
-// ⚠️ REPLACE THIS with your Hotspot/USB IPv4 address!
-const BACKEND_WS_URL = 'ws://192.168.68.107:8080/ws/device';
+// Try this if you are plugged in via USB and Windows Firewall is OFF
+const BACKEND_WS_URL = 'ws://10.0.2.2:8080/ws/device';
 
 export const useFirefighterSocket = () => {
     const [firefighters, setFirefighters] = useState<Record<string, Firefighter>>({});
@@ -49,23 +49,32 @@ export const useFirefighterSocket = () => {
         setFirefighters((prev) => {
             let status: 'NORMAL' | 'WARNING' | 'CRITICAL' = 'NORMAL';
 
+            // Safely extract nested data from your exact JSON structure
+            const currentBpm = data.health?.heartRate || 0;
+            const currentGas = data.environment?.gasPpm || 0;
+
+            // Since motion is raw accelerometer data (ax, ay, az), we will default to 'Active' for now.
+            // Later, you can add math here to detect falls if 'az' drops suddenly!
+            const currentState = 'Active';
+
             // Custom warning/critical thresholds
-            if (data.bpm > 140 || data.gasPpm > 2000 || data.movementState === 'Fall Detected') {
+            if (currentBpm > 140 || currentGas > 2000) {
                 status = 'CRITICAL';
-            } else if (data.bpm > 110 || data.gasPpm > 1000 || data.movementState === 'Stationary') {
+            } else if (currentBpm > 110 || currentGas > 1000) {
                 status = 'WARNING';
             }
 
-            // Merge new data with existing list
+            // Merge new data with existing list to trigger Auto-Detection
             return {
                 ...prev,
                 [data.deviceId]: {
                     id: data.deviceId,
-                    name: data.name || `Firefighter ${data.deviceId}`,
+                    // Extract just the last part of the ID for a cleaner name (e.g., "01" from "firefighter-alpha-01")
+                    name: `FF-${data.deviceId.split('-').pop()?.toUpperCase() || 'Unknown'}`,
                     status: status,
-                    bpm: data.bpm,
-                    gasPpm: data.gasPpm,
-                    movementState: data.movementState,
+                    bpm: currentBpm,
+                    gasPpm: currentGas,
+                    movementState: currentState,
                 },
             };
         });

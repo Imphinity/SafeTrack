@@ -10,6 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopHeader } from '../components/TopHeader';
 import { FirefighterCard } from '../components/FirefighterCard';
 import { DetailDrawer } from '../components/DetailDrawer';
+import { SettingsMenu } from '../components/SettingsMenu';
+import { AddDeviceModal } from '../components/AddDeviceModal';
 import { Firefighter } from '../types/firefighter';
 import { Colors } from '../constants/colors';
 
@@ -20,6 +22,8 @@ export default function DashboardScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFirefighter, setSelectedFirefighter] = useState<Firefighter | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
 
     // FETCH LIVE DATA FROM WEBSOCKET
     const liveFirefighters = useFirefighterSocket();
@@ -46,7 +50,7 @@ export default function DashboardScreen() {
             <TopHeader
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                onOpenSettings={() => console.log('Open Settings Drawer')}
+                onOpenSettings={() => setIsSettingsOpen(true)}
                 onProfilePress={() => console.log('Open Profile/Login')}
             />
 
@@ -76,6 +80,27 @@ export default function DashboardScreen() {
                 visible={isDrawerOpen}
                 firefighter={selectedFirefighter}
                 onClose={handleCloseDrawer}
+            />
+
+            {/* Settings Button */}
+            <SettingsMenu
+                visible={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onAddDevice={() => {
+                    setIsSettingsOpen(false); // Close side menu
+                    setIsAddDeviceOpen(true); // Open the form
+                }}
+            />
+
+            {/* Add Device Button */}
+            <AddDeviceModal
+                visible={isAddDeviceOpen}
+                onClose={() => setIsAddDeviceOpen(false)}
+                onSave={(deviceId, name) => {
+                    console.log(`Ready to send to backend: ID=${deviceId}, Name=${name}`);
+                    // Here we will eventually send this data to Spring Boot!
+                    setIsAddDeviceOpen(false);
+                }}
             />
         </SafeAreaView>
     );
