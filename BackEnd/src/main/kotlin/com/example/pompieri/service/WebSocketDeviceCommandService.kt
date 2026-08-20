@@ -25,7 +25,9 @@ class WebSocketDeviceCommandService(
     override fun stopSpeakerAlarm(deviceId: String) {
         val session = sessionManager.getSession(deviceId)
         if (session != null && session.isOpen) {
-            session.sendMessage(TextMessage("""{"command": "ALARM_OFF"}"""))
+            val payload = """{"command": "ALARM_OFF"}"""
+            session.sendMessage(TextMessage(payload))
+            println("Sent ALARM_OFF back to device: $deviceId")
         }
     }
 }

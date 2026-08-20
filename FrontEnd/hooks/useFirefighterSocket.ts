@@ -1,32 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { Firefighter } from '../types/firefighter';
 
-// Try this if you are plugged in via USB and Windows Firewall is OFF
-const BACKEND_WS_URL = 'ws://10.0.2.2:8080/ws/device';
+// Pointing to the dedicated frontend endpoint
+const BACKEND_WS_URL = 'ws://192.168.68.106:8080/ws/frontend';
 
 export const useFirefighterSocket = () => {
     const [firefighters, setFirefighters] = useState<Record<string, Firefighter>>({});
     const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        // Initialize Native Raw WebSocket
         const ws = new WebSocket(BACKEND_WS_URL);
 
         ws.onopen = () => {
-            console.log('✅ Connected to Spring Boot Raw WebSocket (/ws/device)');
+            console.log('✅ Connected to Spring Boot Frontend WebSocket (/ws/frontend)');
         };
 
         ws.onmessage = (event) => {
             try {
-                const sensorData = JSON.parse(event.data);
-                handleIncomingData(sensorData);
+                // The incoming message is now the full FirefighterDeviceState from Kotlin
+                const deviceState = JSON.parse(event.data);
+                handleIncomingState(deviceState);
             } catch (error) {
                 console.warn('⚠️ Received non-JSON message:', event.data);
             }
         };
 
         ws.onerror = (error) => {
-            // React Native sometimes hides the exact error inside the event object
             console.error('❌ WebSocket error (Is the IP correct?):', error);
         };
 
@@ -36,7 +35,6 @@ export const useFirefighterSocket = () => {
 
         wsRef.current = ws;
 
-        // Cleanup on unmount
         return () => {
             if (wsRef.current) {
                 wsRef.current.close();
@@ -44,42 +42,36 @@ export const useFirefighterSocket = () => {
         };
     }, []);
 
-    // Process raw backend data and determine the status
-    const handleIncomingData = (data: any) => {
+    const handleIncomingState = (data: any) => {
         setFirefighters((prev) => {
-            let status: 'NORMAL' | 'WARNING' | 'CRITICAL' = 'NORMAL';
-
-            // Safely extract nested data from your exact JSON structure
-            const currentBpm = data.health?.heartRate || 0;
-            const currentGas = data.environment?.gasPpm || 0;
-
-            // Since motion is raw accelerometer data (ax, ay, az), we will default to 'Active' for now.
-            // Later, you can add math here to detect falls if 'az' drops suddenly!
-            const currentState = 'Active';
-
-            // Custom warning/critical thresholds
-            if (currentBpm > 140 || currentGas > 2000) {
-                status = 'CRITICAL';
-            } else if (currentBpm > 110 || currentGas > 1000) {
-                status = 'WARNING';
+            // Map backend status (ONLINE/WARNING/CRITICAL) to frontend (NORMAL/WARNING/CRITICAL)
+            let mappedStatus: 'NORMAL' | 'WARNING' | 'CRITICAL' = 'NORMAL';
+            if (data.status === 'CRITICAL') {
+                mappedStatus = 'CRITICAL';
+            } else if (data.status === 'WARNING') {
+                mappedStatus = 'WARNING';
             }
 
-            // Merge new data with existing list to trigger Auto-Detection
+            const telemetry = data.latestTelemetry;
+
+            // Format name nicely if database hasn't loaded a real name yet
+            const displayName = data.firefighterName !== "Load From DB"
+                ? data.firefighterName
+                : `FF-${data.deviceId.split('-').pop()?.toUpperCase() || 'Unknown'}`;
+
             return {
                 ...prev,
                 [data.deviceId]: {
                     id: data.deviceId,
-                    // Extract just the last part of the ID for a cleaner name (e.g., "01" from "firefighter-alpha-01")
-                    name: `FF-${data.deviceId.split('-').pop()?.toUpperCase() || 'Unknown'}`,
-                    status: status,
-                    bpm: currentBpm,
-                    gasPpm: currentGas,
-                    movementState: currentState,
+                    name: displayName,
+                    status: mappedStatus,
+                    bpm: telemetry?.health?.heartRate || 0,
+                    gasPpm: telemetry?.environment?.gasPpm || 0,
+                    movementState: 'Active',
                 },
             };
         });
     };
 
-    // Convert the dictionary back to an array for the FlatList
     return Object.values(firefighters);
 };

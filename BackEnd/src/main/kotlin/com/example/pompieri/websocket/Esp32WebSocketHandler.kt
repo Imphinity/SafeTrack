@@ -1,5 +1,7 @@
 package com.example.pompieri.websocket
 
+import com.example.pompieri.cache.DeviceStateCache
+import com.example.pompieri.model.DeviceStatus
 import com.example.pompieri.model.TelemetryPayload
 import com.example.pompieri.service.TelemetryPipeline
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -12,7 +14,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 @Component
 class Esp32WebSocketHandler(
     private val pipeline: TelemetryPipeline,
-    private val sessionManager: DeviceSessionManager
+    private val sessionManager: DeviceSessionManager,
+    private val stateCache: DeviceStateCache,                  // Injected Cache
+    private val frontendWebSocketHandler: FrontendWebSocketHandler // Injected Frontend Broadcaster
 ) : TextWebSocketHandler() {
 
     // Keep your custom mapper! It safely handles Kotlin data classes and Java Instants.
@@ -39,7 +43,16 @@ class Esp32WebSocketHandler(
 
         if (deviceIdToRemove != null) {
             sessionManager.removeSession(deviceIdToRemove)
-            println("Device disconnected and session removed: $deviceIdToRemove")
+
+            // Look up the last known state
+            val lastState = stateCache.getLatestState(deviceIdToRemove)
+            if (lastState != null) {
+                // Change status to OFFLINE, update cache, and alert the frontend
+                val offlineState = lastState.copy(status = DeviceStatus.OFFLINE)
+                stateCache.updateState(offlineState)
+                frontendWebSocketHandler.broadcastState(offlineState)
+            }
+            println("Device disconnected and marked OFFLINE: $deviceIdToRemove")
         }
     }
 }

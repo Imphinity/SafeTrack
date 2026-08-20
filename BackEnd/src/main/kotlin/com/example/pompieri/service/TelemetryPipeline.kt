@@ -6,14 +6,16 @@ import com.example.pompieri.model.DeviceStatus
 import com.example.pompieri.model.FirefighterDeviceState
 import com.example.pompieri.model.TelemetryPayload
 import com.example.pompieri.rules.AnomalyRule
+import com.example.pompieri.websocket.FrontendWebSocketHandler
 import org.springframework.stereotype.Service
 
 @Service
 class TelemetryPipeline(
     private val stateCache: DeviceStateCache,
-    private val rules: List<AnomalyRule>, // Spring auto-injects all implementations
+    private val rules: List<AnomalyRule>,
     private val commandService: DeviceCommandService,
-    private val databaseRepository: TelemetryDatabaseRepository
+    private val databaseRepository: TelemetryDatabaseRepository,
+    private val frontendWebSocketHandler: FrontendWebSocketHandler // Inject the new handler
 ) {
 
     fun processIncoming(payload: TelemetryPayload) {
@@ -39,7 +41,10 @@ class TelemetryPipeline(
         )
         stateCache.updateState(updatedState)
 
-        // 5. Trigger Speaker if Critical
+        // 5. Broadcast to mobile frontend
+        frontendWebSocketHandler.broadcastState(updatedState)
+
+        // 6. Trigger Speaker if Critical
         if (currentStatus == DeviceStatus.CRITICAL) {
             commandService.triggerSpeakerAlarm(payload.deviceId)
         }

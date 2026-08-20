@@ -42,6 +42,11 @@ export default function DashboardScreen() {
         setIsDrawerOpen(false);
     };
 
+    // Find the live data for the selected firefighter so the drawer updates in real-time
+    const activeFirefighterData = selectedFirefighter
+        ? liveFirefighters.find((f) => f.id === selectedFirefighter.id) || selectedFirefighter
+        : null;
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -78,7 +83,7 @@ export default function DashboardScreen() {
             {/* Bottom Detail Drawer */}
             <DetailDrawer
                 visible={isDrawerOpen}
-                firefighter={selectedFirefighter}
+                firefighter={activeFirefighterData} // Passed the live data reference here
                 onClose={handleCloseDrawer}
             />
 
