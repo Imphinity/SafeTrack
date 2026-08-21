@@ -15,13 +15,16 @@ class GeneralService(
     private val frontendWebSocketHandler: FrontendWebSocketHandler,
 
     // Injecting our clean, dedicated evaluators
-    private val heartbeatEvaluator: HeartbeatEvaluator,
-    private val spO2Evaluator: SpO2Evaluator,
-    private val temperatureEvaluator: TemperatureEvaluator,
-    private val gasLevelEvaluator: GasLevelEvaluator,
-    private val airQualityEvaluator: AirQualityEvaluator,
-    private val motionEvaluator: MotionEvaluator,
-    private val batteryEvaluator: BatteryEvaluator
+    // classes injected based on name. if changed, must specify in another way what bean to inject
+    private val heartbeatEvaluator: MetricEvaluator,
+    private val spO2Evaluator: MetricEvaluator,
+    private val temperatureEvaluator: MetricEvaluator,
+    private val gasLevelEvaluator: MetricEvaluator,
+    private val airQualityEvaluator: MetricEvaluator,
+    private val motionEvaluator: MetricEvaluator,
+    private val batteryEvaluator: MetricEvaluator
+
+//    private val evaluators: List<MetricEvaluator>
 ) {
 
     fun processIncoming(payload: TelemetryPayload) {

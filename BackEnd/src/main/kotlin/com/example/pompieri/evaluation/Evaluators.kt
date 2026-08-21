@@ -1,5 +1,6 @@
 package com.example.pompieri.evaluation
 
+import com.example.pompieri.model.EvaluatedMetrics
 import com.example.pompieri.model.MetricLevel
 import com.example.pompieri.model.MetricResult
 import com.example.pompieri.model.TelemetryPayload

@@ -1,5 +1,8 @@
 package com.example.pompieri.model
 
+import lombok.Builder
+import lombok.With
+import lombok.experimental.Wither
 import java.time.Instant
 
 enum class DeviceStatus { ONLINE, WARNING, CRITICAL, OFFLINE }
@@ -12,14 +15,14 @@ data class MetricResult(
 )
 
 // Grouping all evaluated data for the frontend Detail Drawer
-data class EvaluatedMetrics(
-    val heartbeat: MetricResult,
-    val spO2: MetricResult,
-    val temperature: MetricResult,
-    val gasLevel: MetricResult,
-    val airQuality: MetricResult,
-    val motion: MetricResult,
-    val battery: MetricResult
+class EvaluatedMetrics(
+    var heartbeat: MetricResult,
+    var spO2: MetricResult,
+    var temperature: MetricResult,
+    var gasLevel: MetricResult,
+    var airQuality: MetricResult,
+    var motion: MetricResult,
+    var battery: MetricResult
 )
 
 data class FirefighterDeviceState(

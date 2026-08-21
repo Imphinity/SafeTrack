@@ -1,12 +1,14 @@
 package com.example.pompieri.websocket
 
+import org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE
+import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketSession
 import java.util.concurrent.ConcurrentHashMap
 
+@Scope(SCOPE_PROTOTYPE)
 @Component
 class DeviceSessionManager {
-    //todo: make sure that each place where it is injected is a different instance
     // Maps deviceId -> active WebSocket connection
     private val sessions = ConcurrentHashMap<String, WebSocketSession>()
 
