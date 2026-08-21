@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Firefighter } from '../types/firefighter';
 
 // Pointing to the dedicated frontend endpoint
-const BACKEND_WS_URL = 'ws://192.168.68.106:8080/ws/frontend';
+const BACKEND_WS_URL = 'ws://10.115.31.15:8080/ws/frontend';
 
 export const useFirefighterSocket = () => {
     const [firefighters, setFirefighters] = useState<Record<string, Firefighter>>({});
@@ -44,15 +44,15 @@ export const useFirefighterSocket = () => {
 
     const handleIncomingState = (data: any) => {
         setFirefighters((prev) => {
-            // Map backend status (ONLINE/WARNING/CRITICAL) to frontend (NORMAL/WARNING/CRITICAL)
-            let mappedStatus: 'NORMAL' | 'WARNING' | 'CRITICAL' = 'NORMAL';
+            // Map backend status (ONLINE/WARNING/CRITICAL/OFFLINE) to frontend
+            let mappedStatus: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'OFFLINE' = 'NORMAL';
             if (data.status === 'CRITICAL') {
                 mappedStatus = 'CRITICAL';
             } else if (data.status === 'WARNING') {
                 mappedStatus = 'WARNING';
+            } else if (data.status === 'OFFLINE') {
+                mappedStatus = 'OFFLINE';
             }
-
-            const telemetry = data.latestTelemetry;
 
             // Format name nicely if database hasn't loaded a real name yet
             const displayName = data.firefighterName !== "Load From DB"
@@ -65,9 +65,9 @@ export const useFirefighterSocket = () => {
                     id: data.deviceId,
                     name: displayName,
                     status: mappedStatus,
-                    bpm: telemetry?.health?.heartRate || 0,
-                    gasPpm: telemetry?.environment?.gasPpm || 0,
-                    movementState: 'Active',
+                    metrics: data.metrics, // Direct injection of evaluated backend metrics
+                    lat: data.rawLocation?.lat || 0,
+                    lng: data.rawLocation?.lng || 0,
                 },
             };
         });

@@ -6,6 +6,7 @@ import {
     Animated,
     PanResponder,
     Dimensions,
+    ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
@@ -19,21 +20,24 @@ interface DetailDrawerProps {
     onClose: () => void;
 }
 
+// NEW HELPER: Get the background color for the individual card based on its specific metric level
+const getCardBgColor = (level: string) => {
+    if (level === 'CRITICAL') return Colors.status.CRITICAL.card;
+    if (level === 'WARNING') return Colors.status.WARNING.card;
+    return Colors.status.NORMAL.card;
+};
+
 export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                                                               visible,
                                                               firefighter,
                                                               onClose,
                                                           }) => {
-    // Value to control the sliding animation (starts hidden below the screen)
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-
-    // We keep the last viewed firefighter in memory so the drawer
-    // doesn't suddenly go blank while the slide-down animation is playing.
     const lastFirefighter = useRef<Firefighter | null>(null);
+
     if (firefighter) lastFirefighter.current = firefighter;
     const displayData = firefighter || lastFirefighter.current;
 
-    // Handle slide UP and slide DOWN animations
     useEffect(() => {
         if (visible) {
             Animated.spring(translateY, {
@@ -51,23 +55,17 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
         }
     }, [visible, translateY]);
 
-    // Gesture responder for swiping the drawer down
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => false,
-            // Only start dragging if the user moves their finger down vertically
             onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 5,
             onPanResponderMove: (_, gesture) => {
-                if (gesture.dy > 0) {
-                    translateY.setValue(gesture.dy); // Move drawer with finger
-                }
+                if (gesture.dy > 0) translateY.setValue(gesture.dy);
             },
             onPanResponderRelease: (_, gesture) => {
-                // If dragged down far enough, or swiped fast enough -> Close
                 if (gesture.dy > 120 || gesture.vy > 0.5) {
                     onClose();
                 } else {
-                    // Otherwise, snap it back to the top
                     Animated.spring(translateY, {
                         toValue: 0,
                         useNativeDriver: true,
@@ -79,9 +77,11 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
         })
     ).current;
 
-    if (!displayData) return null;
+    if (!displayData || !displayData.metrics) return null;
 
-    const statusColors = Colors.status[displayData.status];
+    // This is still used for the little status badge pill next to their name
+    const overallStatusColors = Colors.status[displayData.status] || Colors.status.NORMAL;
+    const m = displayData.metrics;
 
     return (
         <Animated.View
@@ -89,68 +89,113 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                 styles.drawerContainer,
                 { transform: [{ translateY }] },
             ]}
-            {...panResponder.panHandlers}
         >
-            {/* Visual Handle Bar for dragging */}
-            <View style={styles.handleBar} />
-
-            <View style={styles.content}>
-                {/* Header Row: Avatar, Name & Status Badge */}
+            {/* Visual Handle Bar & Header Container */}
+            <View {...panResponder.panHandlers} style={styles.dragHeader}>
+                <View style={styles.handleBar} />
                 <View style={styles.headerRow}>
                     <View style={styles.avatarContainer}>
                         <Ionicons name="person-outline" size={32} color={Colors.accentPurple} />
                     </View>
-
                     <Text style={styles.nameText} numberOfLines={1}>
                         {displayData.name}
                     </Text>
-
-                    {/* Status Badge Pill */}
-                    <View style={[styles.statusBadge, { backgroundColor: statusColors.badge }]}>
+                    {/* Overall Status Badge */}
+                    <View style={[styles.statusBadge, { backgroundColor: overallStatusColors.badge }]}>
                         <Text style={styles.statusText}>{displayData.status}</Text>
                     </View>
                 </View>
-
-                {/* Metric Card 1: Heart Rate (BPM) */}
-                <View style={[styles.metricCard, { backgroundColor: statusColors.card }]}>
-                    <Ionicons name="heart-outline" size={36} color="#000000" />
-                    <Text style={styles.metricValueText}>{displayData.bpm} BPM</Text>
-                </View>
-
-                {/* Metric Card 2: Gas Level (PPM) */}
-                <View style={[styles.metricCard, { backgroundColor: statusColors.card }]}>
-                    <Text style={styles.gasSymbolText}>O₂</Text>
-                    <Text style={styles.metricValueText}>{displayData.gasPpm} PPM</Text>
-                </View>
-
-                {/* Metric Card 3: Movement State */}
-                <View style={[styles.metricCard, { backgroundColor: statusColors.card }]}>
-                    <Ionicons name="walk-outline" size={36} color="#000000" />
-                    <Text style={styles.metricValueText}>{displayData.movementState}</Text>
-                </View>
             </View>
+
+            {/* Scrollable Metric Cards */}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {/* Metric: Battery */}
+                {/* Notice how the backgroundColor is now based strictly on m.battery.level */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.battery.level) }]}>
+                    <Ionicons name="battery-half" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Device Battery</Text>
+                        <Text style={styles.metricValueText}>{m.battery.displayValue}</Text>
+                    </View>
+                </View>
+
+                {/* Metric: Heart Rate */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.heartbeat.level) }]}>
+                    <Ionicons name="heart-outline" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Heart Rate</Text>
+                        <Text style={styles.metricValueText}>{m.heartbeat.displayValue}</Text>
+                    </View>
+                </View>
+
+                {/* Metric: SpO2 */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.spO2.level) }]}>
+                    <Ionicons name="water-outline" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Oxygen Saturation</Text>
+                        <Text style={styles.metricValueText}>{m.spO2.displayValue}</Text>
+                    </View>
+                </View>
+
+                {/* Metric: Temperature */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.temperature.level) }]}>
+                    <Ionicons name="thermometer-outline" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Outside Temperature</Text>
+                        <Text style={styles.metricValueText}>{m.temperature.displayValue}</Text>
+                    </View>
+                </View>
+
+                {/* Metric: Air Quality */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.airQuality.level) }]}>
+                    <Ionicons name="cloud-outline" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Air Quality</Text>
+                        <Text style={styles.metricValueText}>{m.airQuality.displayValue}</Text>
+                        <Text style={styles.subText}>Gas Level: {m.gasLevel.displayValue}</Text>
+                    </View>
+                </View>
+
+                {/* Metric: Motion Status */}
+                <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.motion.level) }]}>
+                    <Ionicons name="walk-outline" size={32} color="#000" />
+                    <View style={styles.textStack}>
+                        <Text style={styles.metricLabel}>Motion Status</Text>
+                        <Text style={styles.metricValueText}>{m.motion.displayValue}</Text>
+                    </View>
+                </View>
+            </ScrollView>
         </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     drawerContainer: {
-        position: 'absolute', // Sits on top of the map/list
+        position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
+        height: SCREEN_HEIGHT * 0.75,
         backgroundColor: '#EAEAEA',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: 40, // Safe padding for bottom of screen
-        elevation: 20, // High shadow to float above background
+        elevation: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -5 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
         zIndex: 1000,
+    },
+    dragHeader: {
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 10,
+        backgroundColor: '#EAEAEA',
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
     },
     handleBar: {
         width: 50,
@@ -160,13 +205,10 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginBottom: 16,
     },
-    content: {
-        gap: 14,
-    },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 6,
     },
     avatarContainer: {
         width: 50,
@@ -193,24 +235,39 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 14,
     },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 40,
+        gap: 12,
+    },
     metricCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 18,
-        borderRadius: 20,
-        gap: 20,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+        borderRadius: 16,
+        gap: 16,
     },
-    gasSymbolText: {
-        fontSize: 26,
-        fontWeight: '800',
-        color: '#000000',
-        width: 36,
-        textAlign: 'center',
+    textStack: {
+        flex: 1,
+    },
+    metricLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#333333',
+        marginBottom: 2,
+        textTransform: 'uppercase',
     },
     metricValueText: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '800',
         color: '#000000',
+    },
+    subText: {
+        fontSize: 12,
+        color: '#333333',
+        marginTop: 3,
+        fontWeight: '500',
     },
 });

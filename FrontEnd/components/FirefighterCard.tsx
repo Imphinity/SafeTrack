@@ -9,12 +9,8 @@ interface FirefighterCardProps {
     onPress: (firefighter: Firefighter) => void;
 }
 
-export const FirefighterCard: React.FC<FirefighterCardProps> = ({
-                                                                    firefighter,
-                                                                    onPress,
-                                                                }) => {
-    // Get dynamic background color based on status
-    const cardBgColor = Colors.status[firefighter.status].card;
+export const FirefighterCard: React.FC<FirefighterCardProps> = ({ firefighter, onPress }) => {
+    const cardBgColor = Colors.status[firefighter.status]?.card || '#E0E0E0';
 
     return (
         <TouchableOpacity
@@ -22,19 +18,17 @@ export const FirefighterCard: React.FC<FirefighterCardProps> = ({
             onPress={() => onPress(firefighter)}
             style={[styles.cardContainer, { backgroundColor: cardBgColor }]}
         >
-            {/* Avatar Icon Container */}
             <View style={styles.avatarContainer}>
                 <Ionicons name="person-outline" size={24} color={Colors.accentPurple} />
             </View>
 
-            {/* Name */}
             <Text style={styles.nameText} numberOfLines={1}>
                 {firefighter.name}
             </Text>
 
-            {/* BPM Metric */}
+            {/* Read the new data structure safely */}
             <Text style={styles.bpmText}>
-                {firefighter.bpm} BPM
+                {firefighter.metrics?.heartbeat?.displayValue || '-- BPM'}
             </Text>
         </TouchableOpacity>
     );

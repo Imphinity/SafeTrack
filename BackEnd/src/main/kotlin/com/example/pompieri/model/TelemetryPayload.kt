@@ -1,10 +1,12 @@
 package com.example.pompieri.model
 
+import lombok.AllArgsConstructor
 import java.time.Instant
 
 // --- 1. Raw Telemetry (Inbound from ESP32) ---
+@AllArgsConstructor
 data class TelemetryPayload(
-    val deviceId: String,
+    var deviceId: String,
     val timestamp: Instant,
     val batteryLevel: Int,      // Percentage
     val health: HealthSensor,
