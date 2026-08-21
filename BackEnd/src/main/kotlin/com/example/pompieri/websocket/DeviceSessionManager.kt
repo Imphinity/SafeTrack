@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class DeviceSessionManager {
+    //todo: make sure that each place where it is injected is a different instance
     // Maps deviceId -> active WebSocket connection
     private val sessions = ConcurrentHashMap<String, WebSocketSession>()
 

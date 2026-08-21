@@ -2,7 +2,7 @@ package com.example.pompieri.websocket
 
 import com.example.pompieri.model.TelemetryPayload
 import com.example.pompieri.service.GeneralService
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.example.pompieri.service.WSConnectionInterface
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.stereotype.Component
@@ -14,9 +14,10 @@ private const val DEVICE_NAME = "device_name"
 
 @Component
 class Esp32WebSocketHandler(
-    private val pipeline: GeneralService,
+    private val generalService: GeneralService,
     private val sessionManager: DeviceSessionManager,
-) : TextWebSocketHandler() {
+    //todo: find a way to inject the objectMAPPER, / ADD OJECT MAPPER TO A CONFIG FILE AS A BEAN
+) : TextWebSocketHandler(), WSConnectionInterface {
 
         private val mapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
@@ -31,20 +32,20 @@ class Esp32WebSocketHandler(
         payload.deviceId = session.handshakeHeaders.get(DEVICE_NAME).toString()
 
         // 2. Send data into the pipeline (Rules, Cache, DB)
-        pipeline.processIncoming(payload)
+        generalService.processIncoming(payload)
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: org.springframework.web.socket.CloseStatus) {
         // Find which device just disconnected by matching the session ID
         // and remove it from the manager to prevent memory leaks.
-        val deviceIdToRemove = sessionManager.getAllSessions()
-            .entries
-            .find { it.value.id == session.id }
-            ?.key
+        val deviceIdToRemove = session.handshakeHeaders.get(DEVICE_NAME).toString()
 
-        if (deviceIdToRemove != null) {
-            sessionManager.removeSession(deviceIdToRemove)
-            pipeline.processConnectionLoss(deviceIdToRemove)
-        }
+        sessionManager.removeSession(deviceIdToRemove)
+        generalService.processConnectionLoss(deviceIdToRemove)
+    }
+
+    override fun sendMessage(sessionId: String, message: String) {
+        val session = sessionManager.getSession(sessionId)
+        session!!.sendMessage(TextMessage(mapper.writeValueAsString(message)))
     }
 }
