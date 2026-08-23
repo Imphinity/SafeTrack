@@ -1,6 +1,5 @@
 package com.example.pompieri.evaluation
 
-import com.example.pompieri.model.EvaluatedMetrics
 import com.example.pompieri.model.MetricLevel
 import com.example.pompieri.model.MetricResult
 import com.example.pompieri.model.TelemetryPayload
@@ -8,13 +7,16 @@ import org.springframework.stereotype.Component
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-// The contract for all evaluators
 interface MetricEvaluator {
+    val metricId: String
+    val displayName: String
     fun evaluate(telemetry: TelemetryPayload): MetricResult
 }
 
 @Component
 class HeartbeatEvaluator : MetricEvaluator {
+    override val metricId = "heartbeat"
+    override val displayName = "Heartbeat"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val bpm = telemetry.health.heartRate
         val level = when {
@@ -28,6 +30,8 @@ class HeartbeatEvaluator : MetricEvaluator {
 
 @Component
 class SpO2Evaluator : MetricEvaluator {
+    override val metricId = "spO2"
+    override val displayName = "SpO2"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val spO2 = telemetry.health.spO2
         val level = when {
@@ -41,6 +45,8 @@ class SpO2Evaluator : MetricEvaluator {
 
 @Component
 class TemperatureEvaluator : MetricEvaluator {
+    override val metricId = "temperature"
+    override val displayName = "Temperature"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val temp = telemetry.environment.temp
         val level = when {
@@ -54,6 +60,8 @@ class TemperatureEvaluator : MetricEvaluator {
 
 @Component
 class GasLevelEvaluator : MetricEvaluator {
+    override val metricId = "gasLevel"
+    override val displayName = "Gas Level"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val gas = telemetry.environment.gasPpm
         val level = when {
@@ -67,7 +75,8 @@ class GasLevelEvaluator : MetricEvaluator {
 
 @Component
 class AirQualityEvaluator : MetricEvaluator {
-    // Combines Gas, Temp, and Humidity for a human-readable state
+    override val metricId = "airQuality"
+    override val displayName = "Air Quality"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val temp = telemetry.environment.temp
         val gas = telemetry.environment.gasPpm
@@ -82,6 +91,8 @@ class AirQualityEvaluator : MetricEvaluator {
 
 @Component
 class MotionEvaluator : MetricEvaluator {
+    override val metricId = "motion"
+    override val displayName = "Motion"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val m = telemetry.motion
         // Calculate magnitude of 3D acceleration vector
@@ -101,6 +112,8 @@ class MotionEvaluator : MetricEvaluator {
 
 @Component
 class BatteryEvaluator : MetricEvaluator {
+    override val metricId = "battery"
+    override val displayName = "Battery"
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val battery = telemetry.batteryLevel
         val level = when {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Firefighter } from '../types/firefighter';
 
 // Pointing to the dedicated frontend endpoint
-const BACKEND_WS_URL = 'ws://10.115.31.15:8080/ws/frontend';
+const BACKEND_WS_URL = 'ws://192.168.68.103:8080/ws/frontend';
 
 export const useFirefighterSocket = () => {
     const [firefighters, setFirefighters] = useState<Record<string, Firefighter>>({});

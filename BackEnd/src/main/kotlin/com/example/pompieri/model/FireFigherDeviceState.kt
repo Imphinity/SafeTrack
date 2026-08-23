@@ -16,13 +16,7 @@ data class MetricResult(
 
 // Grouping all evaluated data for the frontend Detail Drawer
 class EvaluatedMetrics(
-    var heartbeat: MetricResult,
-    var spO2: MetricResult,
-    var temperature: MetricResult,
-    var gasLevel: MetricResult,
-    var airQuality: MetricResult,
-    var motion: MetricResult,
-    var battery: MetricResult
+    val metrics: Map<String, MetricResult>
 )
 
 data class FirefighterDeviceState(
@@ -31,6 +25,6 @@ data class FirefighterDeviceState(
     val lastSeen: Instant,
     val status: DeviceStatus,
     val activeWarnings: List<String>,
-    val metrics: EvaluatedMetrics, // The cleanly interpreted data
+    val metrics: Map<String, MetricResult>,
     val rawLocation: LocationSensor // Passed as-is so the frontend map can use it
 )

@@ -1,10 +1,9 @@
 package com.example.pompieri.websocket
 
 import com.example.pompieri.model.TelemetryPayload
-import com.example.pompieri.service.GeneralService
+import com.example.pompieri.service.TelemetryProcessingService
 import com.example.pompieri.service.WSConnectionInterface
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper // <-- Import this
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
@@ -14,12 +13,10 @@ private const val DEVICE_NAME = "device_name"
 
 @Component
 class Esp32WebSocketHandler(
-    private val generalService: GeneralService,
+    private val telemetryProcessingService: TelemetryProcessingService,
     private val sessionManager: DeviceSessionManager,
-    //todo: find a way to inject the objectMAPPER, / ADD OJECT MAPPER TO A CONFIG FILE AS A BEAN
+    private val mapper: ObjectMapper // <-- Injected here!
 ) : TextWebSocketHandler(), WSConnectionInterface {
-
-        private val mapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     override fun afterConnectionEstablished(session: WebSocketSession){
         // 1. Save the session so we can talk back to this specific ESP32 later
@@ -32,7 +29,7 @@ class Esp32WebSocketHandler(
         payload.deviceId = session.handshakeHeaders.get(DEVICE_NAME).toString()
 
         // 2. Send data into the pipeline (Rules, Cache, DB)
-        generalService.processIncoming(payload)
+        telemetryProcessingService.processIncoming(payload)
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: org.springframework.web.socket.CloseStatus) {
@@ -41,7 +38,7 @@ class Esp32WebSocketHandler(
         val deviceIdToRemove = session.handshakeHeaders.get(DEVICE_NAME).toString()
 
         sessionManager.removeSession(deviceIdToRemove)
-        generalService.processConnectionLoss(deviceIdToRemove)
+        telemetryProcessingService.processConnectionLoss(deviceIdToRemove)
     }
 
     override fun sendMessage(sessionId: String, message: String) {
