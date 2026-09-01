@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { useTheme } from '../context/ThemeContext'; // Import the hook
 
 interface TopHeaderProps {
     searchQuery: string;
@@ -16,29 +16,28 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                                                         onOpenSettings,
                                                         onProfilePress,
                                                     }) => {
+    const { colors } = useTheme(); // Grab the dynamic colors
+
     return (
-        <View style={styles.container}>
-            {/* Settings Gear Button */}
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <TouchableOpacity onPress={onOpenSettings} style={styles.iconButton}>
-                <Ionicons name="settings-outline" size={26} color={Colors.textPrimary} />
+                <Ionicons name="settings-outline" size={26} color={colors.textPrimary} />
             </TouchableOpacity>
 
-            {/* Search Bar */}
-            <View style={styles.searchBar}>
-                <Ionicons name="menu-outline" size={20} color={Colors.textSecondary} style={styles.searchIconLeft} />
+            <View style={[styles.searchBar, { backgroundColor: colors.cardBackground }]}>
+                <Ionicons name="menu-outline" size={20} color={colors.textSecondary} style={styles.searchIconLeft} />
                 <TextInput
                     value={searchQuery}
                     onChangeText={onSearchChange}
                     placeholder="Hinted search text"
-                    placeholderTextColor={Colors.textSecondary}
-                    style={styles.searchInput}
+                    placeholderTextColor={colors.textSecondary}
+                    style={[styles.searchInput, { color: colors.textPrimary }]}
                 />
-                <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
+                <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
             </View>
 
-            {/* Profile Avatar Button */}
             <TouchableOpacity onPress={onProfilePress} style={styles.profileButton}>
-                <Ionicons name="person-circle-outline" size={32} color={Colors.accentPurple} />
+                <Ionicons name="person-circle-outline" size={32} color={colors.accentPurple} />
             </TouchableOpacity>
         </View>
     );
@@ -50,7 +49,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: Colors.background,
         gap: 10,
     },
     iconButton: {
@@ -60,7 +58,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.cardBackground,
         borderRadius: 20,
         paddingHorizontal: 12,
         height: 40,
@@ -71,7 +68,6 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 14,
-        color: Colors.textPrimary,
     },
     profileButton: {
         padding: 2,

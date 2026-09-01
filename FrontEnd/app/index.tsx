@@ -1,34 +1,39 @@
 import React, { useState } from 'react';
-import {
-    StyleSheet,
-    View,
-    Text,
-    FlatList,
-    StatusBar,
-} from 'react-native';
+import { StyleSheet, View, Text, FlatList, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons'; // NEW: Imported for the map markers
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'; // NEW: Map components
+
 import { TopHeader } from '../components/TopHeader';
 import { FirefighterCard } from '../components/FirefighterCard';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { SettingsMenu } from '../components/SettingsMenu';
-import { AddDeviceModal } from '../components/AddDeviceModal';
 import { Firefighter } from '../types/firefighter';
-import { Colors } from '../constants/colors';
-
-// Import the live WebSocket hook
+import { useTheme } from '../context/ThemeContext';
+import { CriticalAlarmModal } from '../components/CriticalAlarmModal';
 import { useFirefighterSocket } from '../hooks/useFirefighterSocket';
 
 export default function DashboardScreen() {
+    const { colors, isDark } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFirefighter, setSelectedFirefighter] = useState<Firefighter | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
 
-    // FETCH LIVE DATA FROM WEBSOCKET
-    const liveFirefighters = useFirefighterSocket();
+    const [alarmState, setAlarmState] = useState<{ visible: boolean, firefighter: Firefighter | null, reason: string }>({
+        visible: false,
+        firefighter: null,
+        reason: ''
+    });
 
-    // Real-time search filter using live data instead of mock data
+    const handleCriticalAlert = (ff: Firefighter, reason: string) => {
+        setIsDrawerOpen(false);
+        setIsSettingsOpen(false);
+        setAlarmState({ visible: true, firefighter: ff, reason });
+    };
+
+    const liveFirefighters = useFirefighterSocket(handleCriticalAlert);
+
     const filteredFirefighters = liveFirefighters.filter((firefighter) =>
         firefighter.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -38,20 +43,14 @@ export default function DashboardScreen() {
         setIsDrawerOpen(true);
     };
 
-    const handleCloseDrawer = () => {
-        setIsDrawerOpen(false);
-    };
-
-    // Find the live data for the selected firefighter so the drawer updates in real-time
     const activeFirefighterData = selectedFirefighter
         ? liveFirefighters.find((f) => f.id === selectedFirefighter.id) || selectedFirefighter
         : null;
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
-            {/* Top Header Navigation */}
             <TopHeader
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -59,7 +58,6 @@ export default function DashboardScreen() {
                 onProfilePress={() => console.log('Open Profile/Login')}
             />
 
-            {/* Middle: Scrollable Firefighter List */}
             <View style={styles.listContainer}>
                 <FlatList
                     data={filteredFirefighters}
@@ -75,36 +73,60 @@ export default function DashboardScreen() {
                 />
             </View>
 
-            {/* Bottom: Placeholder Map Area */}
-            <View style={styles.mapArea}>
-                <Text style={styles.mapText}>MAP HERE</Text>
+            {/* --- NEW LIVE MAP AREA --- */}
+            {/* --- NEW LIVE MAP AREA --- */}
+            <View style={[styles.mapArea, { borderTopColor: colors.border }]}>
+                <MapView
+                    // 1. REMOVED the provider line!
+                    // 2. Swapped absoluteFillObject for explicit 100% dimensions
+                    style={{ width: '100%', height: '100%' }}
+                    initialRegion={{
+                        latitude: 46.7712,
+                        longitude: 23.6236,
+                        latitudeDelta: 0.05,
+                        longitudeDelta: 0.05,
+                    }}
+                >
+                    {filteredFirefighters.map((ff) => {
+                        const badgeColor = colors.status[ff.status]?.badge || colors.status.NORMAL.badge;
+                        return (
+                            <Marker
+                                key={ff.id}
+                                coordinate={{ latitude: ff.lat, longitude: ff.lng }}
+                                title={ff.name}
+                                description={`Status: ${ff.status}`}
+                                onPress={() => handleSelectFirefighter(ff)}
+                            >
+                                <View style={[styles.markerPin, { backgroundColor: badgeColor }]}>
+                                    <Ionicons name="flame" size={16} color="#FFFFFF" />
+                                </View>
+                            </Marker>
+                        );
+                    })}
+                </MapView>
             </View>
 
-            {/* Bottom Detail Drawer */}
             <DetailDrawer
                 visible={isDrawerOpen}
-                firefighter={activeFirefighterData} // Passed the live data reference here
-                onClose={handleCloseDrawer}
+                firefighter={activeFirefighterData}
+                onClose={() => setIsDrawerOpen(false)}
             />
 
-            {/* Settings Button */}
             <SettingsMenu
                 visible={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onAddDevice={() => {
-                    setIsSettingsOpen(false); // Close side menu
-                    setIsAddDeviceOpen(true); // Open the form
-                }}
             />
 
-            {/* Add Device Button */}
-            <AddDeviceModal
-                visible={isAddDeviceOpen}
-                onClose={() => setIsAddDeviceOpen(false)}
-                onSave={(deviceId, name) => {
-                    console.log(`Ready to send to backend: ID=${deviceId}, Name=${name}`);
-                    // Here we will eventually send this data to Spring Boot!
-                    setIsAddDeviceOpen(false);
+            <CriticalAlarmModal
+                visible={alarmState.visible}
+                firefighter={alarmState.firefighter}
+                reason={alarmState.reason}
+                onClose={() => setAlarmState(prev => ({ ...prev, visible: false }))}
+                onOpenDetails={() => {
+                    setAlarmState(prev => ({ ...prev, visible: false }));
+                    if (alarmState.firefighter) {
+                        handleSelectFirefighter(alarmState.firefighter);
+                    }
                 }}
             />
         </SafeAreaView>
@@ -114,7 +136,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
     },
     listContainer: {
         flex: 1,
@@ -124,17 +145,21 @@ const styles = StyleSheet.create({
     },
     mapArea: {
         height: 320,
-        backgroundColor: '#E0E0E0',
+        borderTopWidth: 1,
+        overflow: 'hidden', // Ensures the map doesn't bleed out of the container
+    },
+    markerPin: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: '#D0D0D0',
-    },
-    mapText: {
-        fontSize: 22,
-        fontWeight: '300',
-        letterSpacing: 3,
-        color: '#666666',
-        transform: [{ rotate: '-25deg' }],
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 5,
     },
 });

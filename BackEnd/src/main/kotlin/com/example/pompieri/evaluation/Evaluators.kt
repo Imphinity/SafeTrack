@@ -65,11 +65,11 @@ class GasLevelEvaluator : MetricEvaluator {
     override fun evaluate(telemetry: TelemetryPayload): MetricResult {
         val gas = telemetry.environment.gasPpm
         val level = when {
-            gas > 2000.0 -> MetricLevel.CRITICAL
-            gas > 1000.0 -> MetricLevel.WARNING
+            gas > 3000.0 -> MetricLevel.CRITICAL
+            gas > 2200.0 -> MetricLevel.WARNING
             else -> MetricLevel.NORMAL
         }
-        return MetricResult("$gas PPM", level)
+        return MetricResult("$gas AQI", level)
     }
 }
 

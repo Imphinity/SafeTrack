@@ -9,8 +9,8 @@ import {
     ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
 import { Firefighter } from '../types/firefighter';
+import { useTheme } from '../context/ThemeContext'; // 1. Import the theme hook
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -20,23 +20,24 @@ interface DetailDrawerProps {
     onClose: () => void;
 }
 
-// NEW HELPER: Get the background color for the individual card based on its specific metric level
-const getCardBgColor = (level: string) => {
-    if (level === 'CRITICAL') return Colors.status.CRITICAL.card;
-    if (level === 'WARNING') return Colors.status.WARNING.card;
-    return Colors.status.NORMAL.card;
-};
-
 export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                                                               visible,
                                                               firefighter,
                                                               onClose,
                                                           }) => {
+    const { colors, isDark } = useTheme(); // 2. Grab the current theme colors
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const lastFirefighter = useRef<Firefighter | null>(null);
 
     if (firefighter) lastFirefighter.current = firefighter;
     const displayData = firefighter || lastFirefighter.current;
+
+    // 3. Moved inside so it can use dynamic theme colors
+    const getCardBgColor = (level: string) => {
+        if (level === 'CRITICAL') return colors.status.CRITICAL.card;
+        if (level === 'WARNING') return colors.status.WARNING.card;
+        return colors.status.NORMAL.card;
+    };
 
     useEffect(() => {
         if (visible) {
@@ -79,41 +80,38 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
 
     if (!displayData || !displayData.metrics) return null;
 
-    // This is still used for the little status badge pill next to their name
-    const overallStatusColors = Colors.status[displayData.status] || Colors.status.NORMAL;
+    const overallStatusColors = colors.status[displayData.status] || colors.status.NORMAL;
     const m = displayData.metrics;
 
     return (
         <Animated.View
             style={[
                 styles.drawerContainer,
-                { transform: [{ translateY }] },
+                {
+                    transform: [{ translateY }],
+                    backgroundColor: colors.menuBackground // Dynamic Background
+                },
             ]}
         >
-            {/* Visual Handle Bar & Header Container */}
-            <View {...panResponder.panHandlers} style={styles.dragHeader}>
-                <View style={styles.handleBar} />
+            <View {...panResponder.panHandlers} style={[styles.dragHeader, { backgroundColor: colors.menuBackground }]}>
+                <View style={[styles.handleBar, { backgroundColor: colors.border }]} />
                 <View style={styles.headerRow}>
-                    <View style={styles.avatarContainer}>
-                        <Ionicons name="person-outline" size={32} color={Colors.accentPurple} />
+                    <View style={[styles.avatarContainer, { backgroundColor: colors.background }]}>
+                        <Ionicons name="person-outline" size={32} color={colors.accentPurple} />
                     </View>
-                    <Text style={styles.nameText} numberOfLines={1}>
+                    <Text style={[styles.nameText, { color: colors.textPrimary }]} numberOfLines={1}>
                         {displayData.name}
                     </Text>
-                    {/* Overall Status Badge */}
                     <View style={[styles.statusBadge, { backgroundColor: overallStatusColors.badge }]}>
                         <Text style={styles.statusText}>{displayData.status}</Text>
                     </View>
                 </View>
             </View>
 
-            {/* Scrollable Metric Cards */}
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Metric: Battery */}
-                {/* Notice how the backgroundColor is now based strictly on m.battery.level */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.battery.level) }]}>
                     <Ionicons name="battery-half" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -122,7 +120,6 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                     </View>
                 </View>
 
-                {/* Metric: Heart Rate */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.heartbeat.level) }]}>
                     <Ionicons name="heart-outline" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -131,7 +128,6 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                     </View>
                 </View>
 
-                {/* Metric: SpO2 */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.spO2.level) }]}>
                     <Ionicons name="water-outline" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -140,7 +136,6 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                     </View>
                 </View>
 
-                {/* Metric: Temperature */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.temperature.level) }]}>
                     <Ionicons name="thermometer-outline" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -149,7 +144,6 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                     </View>
                 </View>
 
-                {/* Metric: Air Quality */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.airQuality.level) }]}>
                     <Ionicons name="cloud-outline" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -159,7 +153,6 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                     </View>
                 </View>
 
-                {/* Metric: Motion Status */}
                 <View style={[styles.metricCard, { backgroundColor: getCardBgColor(m.motion.level) }]}>
                     <Ionicons name="walk-outline" size={32} color="#000" />
                     <View style={styles.textStack}>
@@ -179,7 +172,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: SCREEN_HEIGHT * 0.75,
-        backgroundColor: '#EAEAEA',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         elevation: 20,
@@ -193,14 +185,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 12,
         paddingBottom: 10,
-        backgroundColor: '#EAEAEA',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
     },
     handleBar: {
         width: 50,
         height: 5,
-        backgroundColor: '#C5C5C5',
         borderRadius: 3,
         alignSelf: 'center',
         marginBottom: 16,
@@ -214,7 +204,6 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 14,
@@ -223,7 +212,6 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 20,
         fontWeight: '700',
-        color: '#000000',
     },
     statusBadge: {
         paddingHorizontal: 16,
